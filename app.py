@@ -457,38 +457,44 @@ def render_piano_roll_plot(tokens, quarter_length=0.5):
             showlegend=False,
         ))
 
-    # Calculate bounds
+    # Calculate bounds & unique pitch labels
     pitches = [e["midi_pitch"] for e in events]
-    min_pitch = min(pitches) - 2
-    max_pitch = max(pitches) + 2
-    max_time = max(e["end_time"] for e in events) + 1.0
+    min_pitch = min(pitches) - 1
+    max_pitch = max(pitches) + 1
+    max_time = max(e["end_time"] for e in events) + 0.5
+
+    # Musical pitch names for y-axis ticks
+    pitch_to_name = {e["midi_pitch"]: e["pitch_name"] for e in events}
+    unique_pitches = sorted(list(set(pitches)))
+    tick_texts = [f"{pitch_to_name.get(p, str(p))} ({p})" for p in unique_pitches]
 
     fig.update_layout(
         template="plotly_dark",
         plot_bgcolor="#0D111B",
         paper_bgcolor="#111827",
-        margin=dict(l=50, r=20, t=30, b=40),
-        height=320,
+        margin=dict(l=65, r=20, t=35, b=40),
+        height=340,
         title=dict(
-            text="Visual Piano-Roll Preview (Electric Blue: Melody | Neon Red: Accent Beats)",
+            text="Interactive Piano-Roll (Electric Blue: Melody | Neon Red: Accent Beats)",
             font=dict(size=12, color="#9AA6BA", family="Plus Jakarta Sans"),
             x=0.01,
         ),
         xaxis=dict(
-            title="Time Offset (Quarters)",
+            title=dict(text="Time Offset (Quarters)", font=dict(color="#9AA6BA", size=11)),
             range=[0, max_time],
             gridcolor="#263247",
             zerolinecolor="#263247",
             tickfont=dict(color="#9AA6BA"),
-            titlefont=dict(color="#9AA6BA", size=11),
         ),
         yaxis=dict(
-            title="MIDI Pitch Number",
-            range=[min_pitch, max_pitch],
+            title=dict(text="Musical Pitch", font=dict(color="#9AA6BA", size=11)),
+            range=[min_pitch - 0.5, max_pitch + 0.5],
             gridcolor="#263247",
             zerolinecolor="#263247",
-            tickfont=dict(color="#9AA6BA"),
-            titlefont=dict(color="#9AA6BA", size=11),
+            tickmode="array",
+            tickvals=unique_pitches,
+            ticktext=tick_texts,
+            tickfont=dict(color="#36A3FF", size=10),
         ),
         barmode='overlay',
     )
@@ -697,8 +703,8 @@ def page_dashboard(cfg):
                         paper_bgcolor="#111827",
                         margin=dict(l=40, r=20, t=30, b=30),
                         height=260,
-                        xaxis=dict(title="Epoch", gridcolor="#263247"),
-                        yaxis=dict(title="Cross-Entropy Loss", gridcolor="#263247"),
+                        xaxis=dict(title=dict(text="Epoch", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
+                        yaxis=dict(title=dict(text="Cross-Entropy Loss", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
                     )
                     st.plotly_chart(fig, use_container_width=True)
                 else:
@@ -960,8 +966,8 @@ def page_model_training(cfg):
                 paper_bgcolor="#111827",
                 height=260,
                 margin=dict(l=30, r=20, t=20, b=20),
-                xaxis=dict(title="Epoch", gridcolor="#263247"),
-                yaxis=dict(title="Loss", gridcolor="#263247"),
+                xaxis=dict(title=dict(text="Epoch", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
+                yaxis=dict(title=dict(text="Loss", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
             )
             chart_slot.plotly_chart(fig, use_container_width=True)
 
@@ -1036,19 +1042,58 @@ def page_music_generator(cfg):
     </div>
     """, unsafe_allow_html=True)
 
+    # Quick Style Presets for User Experience
+    st.markdown("<div style='font-size: 0.82rem; font-weight: 700; color: #9AA6BA; text-transform: uppercase; margin-bottom: 8px;'>✨ Quick Style & Mood Presets</div>", unsafe_allow_html=True)
+    ps1, ps2, ps3, ps4 = st.columns(4)
+    with ps1:
+        if st.button("🎹 Classical Nocturne", use_container_width=True):
+            st.session_state["p_notes"] = 48
+            st.session_state["p_temp"] = 0.65
+            st.session_state["p_bpm"] = 96
+            st.session_state["p_inst"] = "Acoustic Grand Piano"
+            st.rerun()
+    with ps2:
+        if st.button("⚡ Cyberpunk Synth", use_container_width=True):
+            st.session_state["p_notes"] = 64
+            st.session_state["p_temp"] = 0.85
+            st.session_state["p_bpm"] = 128
+            st.session_state["p_inst"] = "Synthesizer"
+            st.rerun()
+    with ps3:
+        if st.button("🎻 Cinematic Strings", use_container_width=True):
+            st.session_state["p_notes"] = 36
+            st.session_state["p_temp"] = 0.60
+            st.session_state["p_bpm"] = 80
+            st.session_state["p_inst"] = "Violin"
+            st.rerun()
+    with ps4:
+        if st.button("🎷 Midnight Jazz", use_container_width=True):
+            st.session_state["p_notes"] = 56
+            st.session_state["p_temp"] = 1.05
+            st.session_state["p_bpm"] = 120
+            st.session_state["p_inst"] = "Saxophone"
+            st.rerun()
+
+    init_notes = st.session_state.get("p_notes", int(cfg["generation"]["num_notes"]))
+    init_temp = st.session_state.get("p_temp", float(cfg["generation"]["temperature"]))
+    init_bpm = st.session_state.get("p_bpm", int(cfg["generation"]["bpm"]))
+    init_inst = st.session_state.get("p_inst", cfg["generation"]["instrument"])
+    inst_keys = list(INSTRUMENT_MAP.keys())
+    inst_idx = inst_keys.index(init_inst) if init_inst in inst_keys else 0
+
     # Generation Parameters
     g_col1, g_col2, g_col3 = st.columns(3)
 
     with g_col1:
-        num_notes = st.slider("Note Sequence Length", min_value=16, max_value=128, value=int(cfg["generation"]["num_notes"]), step=8,
+        num_notes = st.slider("Note Sequence Length", min_value=16, max_value=128, value=init_notes, step=8,
                               help="Total number of consecutive musical tokens to synthesize.")
-        temperature = st.slider("Temperature (Randomness)", min_value=0.2, max_value=1.5, value=float(cfg["generation"]["temperature"]), step=0.05,
+        temperature = st.slider("Temperature (Randomness)", min_value=0.2, max_value=1.5, value=init_temp, step=0.05,
                                 help="Lower values produce structured, repetitive melodies; higher values produce creative, experimental variations.")
 
     with g_col2:
-        bpm = st.slider("Tempo (BPM)", min_value=60, max_value=200, value=int(cfg["generation"]["bpm"]), step=5,
+        bpm = st.slider("Tempo (BPM)", min_value=60, max_value=200, value=init_bpm, step=5,
                         help="Beats per minute for playback speed.")
-        instrument = st.selectbox("Instrument Program", options=list(INSTRUMENT_MAP.keys()), index=0,
+        instrument = st.selectbox("Instrument Program", options=inst_keys, index=inst_idx,
                                   help="General MIDI instrument timbre.")
 
     with g_col3:
@@ -1064,7 +1109,8 @@ def page_music_generator(cfg):
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Storage for active generation session
-    if generate_btn:
+    if generate_btn or st.session_state.get("trigger_regenerate", False):
+        st.session_state["trigger_regenerate"] = False
         out_dir = Path(cfg["generation"]["output_dir"])
         out_dir.mkdir(parents=True, exist_ok=True)
         file_base = f"comp_{int(time.time())}"
@@ -1105,7 +1151,7 @@ def page_music_generator(cfg):
                 <span style="font-size: 0.8rem; color: #9AA6BA;">{meta.get('created_at')}</span>
             </div>
             <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 6px 0; color: #F4F7FF;">{meta.get('title')}</h2>
-            <div style="display: flex; gap: 20px; font-size: 0.85rem; color: #9AA6BA;">
+            <div style="display: flex; gap: 20px; font-size: 0.85rem; color: #9AA6BA; flex-wrap: wrap;">
                 <span>Instrument: <b style="color: #F4F7FF;">{meta.get('instrument')}</b></span>
                 <span>Tempo: <b style="color: #F4F7FF;">{meta.get('bpm')} BPM</b></span>
                 <span>Events: <b style="color: #36A3FF;">{meta.get('num_notes')} notes</b></span>
@@ -1118,12 +1164,12 @@ def page_music_generator(cfg):
         st.subheader("Auditory Playback")
         render_web_audio_player(comp["tokens"], bpm=meta.get("bpm", 120), key="gen_play")
 
-        # Download Buttons
+        # Download & Variation Buttons
         midi_path = Path(comp["midi_path"])
         if midi_path.exists():
             with open(midi_path, "rb") as mf:
                 midi_bytes = mf.read()
-            d_c1, d_c2 = st.columns([1, 2])
+            d_c1, d_c2, d_c3 = st.columns([1, 1, 2])
             with d_c1:
                 st.download_button(
                     label="📥 Download Standard MIDI (.mid)",
@@ -1133,6 +1179,10 @@ def page_music_generator(cfg):
                     use_container_width=True,
                 )
             with d_c2:
+                if st.button("🔄 Generate Another Variation", use_container_width=True):
+                    st.session_state["trigger_regenerate"] = True
+                    st.rerun()
+            with d_c3:
                 st.caption(f"File size: {len(midi_bytes)} bytes. Compatible with MuseScore, GarageBand, FL Studio, Ableton, and Windows Media Player.")
 
         # Piano Roll Visualization
