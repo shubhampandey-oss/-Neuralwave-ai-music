@@ -1,0 +1,46 @@
+# NeuralWave AI Configuration
+
+app:
+  name: "NeuralWave AI"
+  subtitle: "AI Music Generation Studio"
+  version: "1.0.0"
+  description: "PyTorch-powered LSTM music generation studio for MIDI composition"
+
+dataset:
+  data_dir: "data/midi"
+  preprocessed_dir: "data/preprocessed"
+  sequence_length: 32
+  min_notes_per_file: 8
+  max_files: 150
+  save_format: "pt"
+
+model:
+  name: "NeuralWaveLSTM"
+  embedding_dim: 128
+  hidden_dim: 256
+  num_layers: 2
+  dropout: 0.2
+
+training:
+  learning_rate: 0.002
+  batch_size: 32
+  epochs: 10
+  checkpoint_dir: "models"
+  checkpoint_interval: 2
+  device: "auto"  # "auto", "cpu", or "cuda"
+  seed: 42
+  validation_split: 0.1
+
+generation:
+  num_notes: 64
+  temperature: 0.85
+  bpm: 120
+  instrument: "Acoustic Grand Piano"
+  quarter_length: 0.5
+  output_dir: "outputs"
+  seed: 42
+
+audio:
+  soundfont_path: ""
+  fluidsynth_path: ""
+  sample_rate: 44100
