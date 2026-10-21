@@ -13,15 +13,23 @@ from .model import NeuralWaveLSTM, resolve_device
 from .midi_utils import export_midi, validate_midi_file, extract_piano_roll_data
 
 
+_MODEL_CHECKPOINT_CACHE: Dict[str, Tuple[Any, Any, Any, Any, Any]] = {}
+
+
 def load_model_checkpoint(checkpoint_path: str | Path, device_name: str = "auto") -> Tuple[Any, Any, Any, Any, Any]:
     """
     Loads model checkpoint and reconstructs architecture.
+    Cached in-memory to prevent repeated disk loads and GPU/CPU re-allocations.
     """
     ckpt_p = Path(checkpoint_path)
     if not ckpt_p.exists():
         raise FileNotFoundError(f"Checkpoint not found at: {ckpt_p}")
 
     device = resolve_device(device_name)
+    cache_key = f"{str(ckpt_p.resolve())}_{ckpt_p.stat().st_mtime}_{device}"
+    if cache_key in _MODEL_CHECKPOINT_CACHE:
+        return _MODEL_CHECKPOINT_CACHE[cache_key]
+
     data = torch.load(str(ckpt_p), map_location=device, weights_only=False)
 
     cfg = data["config"]
@@ -39,7 +47,9 @@ def load_model_checkpoint(checkpoint_path: str | Path, device_name: str = "auto"
     model.load_state_dict(data["model_state_dict"])
     model.eval()
 
-    return model, vocab_to_idx, idx_to_vocab, cfg, device
+    res = (model, vocab_to_idx, idx_to_vocab, cfg, device)
+    _MODEL_CHECKPOINT_CACHE[cache_key] = res
+    return res
 
 
 # Type alias for return

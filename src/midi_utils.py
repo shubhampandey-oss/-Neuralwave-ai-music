@@ -165,15 +165,23 @@ def export_midi(
     return out_p
 
 
+_MIDI_VALIDATION_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
 def validate_midi_file(file_path: str | Path) -> Dict[str, Any]:
     """
     Opens and validates a MIDI file, reporting duration, notes, and validity.
+    Cached in-memory to prevent repeated music21 parsing on Streamlit reruns.
     """
     path = Path(file_path)
     if not path.exists():
         return {"valid": False, "error": "File does not exist"}
     if path.stat().st_size == 0:
         return {"valid": False, "error": "File is 0 bytes"}
+
+    cache_key = f"{str(path.resolve())}_{path.stat().st_mtime}"
+    if cache_key in _MIDI_VALIDATION_CACHE:
+        return _MIDI_VALIDATION_CACHE[cache_key]
 
     try:
         score = m21.converter.parse(str(path))
@@ -190,7 +198,7 @@ def validate_midi_file(file_path: str | Path) -> Dict[str, Any]:
 
         duration_seconds = (duration_quarters / tempo) * 60.0 if tempo > 0 else 0.0
 
-        return {
+        res = {
             "valid": True,
             "filename": path.name,
             "size_bytes": path.stat().st_size,
@@ -200,6 +208,8 @@ def validate_midi_file(file_path: str | Path) -> Dict[str, Any]:
             "tempo": tempo,
             "duration_seconds": round(duration_seconds, 2),
         }
+        _MIDI_VALIDATION_CACHE[cache_key] = res
+        return res
     except Exception as e:
         return {"valid": False, "error": str(e)}
 

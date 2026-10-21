@@ -49,6 +49,12 @@ from src.validation import (
 )
 from src.audio_utils import get_audio_renderer_status, render_midi_to_wav
 
+
+@st.cache_data
+def get_cached_config():
+    """Loads configuration with Streamlit caching to eliminate redundant disk reads."""
+    return load_config()
+
 # ---------------------------------------------------------
 # Page Configuration & Visual Theme
 # ---------------------------------------------------------
@@ -498,7 +504,7 @@ def render_piano_roll_plot(tokens, quarter_length=0.5):
         ),
         barmode='overlay',
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
 # ---------------------------------------------------------
@@ -807,7 +813,7 @@ def page_dashboard(cfg):
                         xaxis=dict(title=dict(text="Epoch", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
                         yaxis=dict(title=dict(text="Cross-Entropy Loss", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
                 else:
                     st.info("No training history recorded yet.")
             except Exception as e:
@@ -1069,7 +1075,7 @@ def page_model_training(cfg):
                 xaxis=dict(title=dict(text="Epoch", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
                 yaxis=dict(title=dict(text="Loss", font=dict(color="#9AA6BA", size=11)), gridcolor="#263247", tickfont=dict(color="#9AA6BA")),
             )
-            chart_slot.plotly_chart(fig, use_container_width=True)
+            chart_slot.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         try:
             results = train_model(
@@ -1494,7 +1500,7 @@ def page_about():
 # Main Router
 # ---------------------------------------------------------
 def main():
-    cfg = load_config()
+    cfg = get_cached_config()
     init_navigation()
 
     # Render sidebar with fully interactive and synchronized selection

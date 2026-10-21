@@ -11,16 +11,23 @@ import music21
 
 from .audio_utils import get_audio_renderer_status
 
+_SYSTEM_ENV_CACHE: Dict[str, Any] = {}
+
 
 def get_system_environment_info() -> Dict[str, Any]:
     """
     Returns full diagnostic information about Python, PyTorch, hardware, and audio engines.
+    Cached in-memory to prevent repeated querying on Streamlit reruns.
     """
+    global _SYSTEM_ENV_CACHE
+    if _SYSTEM_ENV_CACHE:
+        return _SYSTEM_ENV_CACHE
+
     cuda_avail = torch.cuda.is_available()
     device_name = torch.cuda.get_device_name(0) if cuda_avail else "CPU Only"
     renderer_info = get_audio_renderer_status()
 
-    return {
+    _SYSTEM_ENV_CACHE = {
         "python_version": sys.version.split()[0],
         "torch_version": torch.__version__,
         "music21_version": music21.__version__,
@@ -30,6 +37,7 @@ def get_system_environment_info() -> Dict[str, Any]:
         "os_platform": sys.platform,
         "audio_renderer": renderer_info,
     }
+    return _SYSTEM_ENV_CACHE
 
 
 def validate_directories(base_dir: Path) -> Dict[str, Dict[str, Any]]:
@@ -57,29 +65,39 @@ def validate_directories(base_dir: Path) -> Dict[str, Dict[str, Any]]:
     return status
 
 
+_CHECKPOINT_VAL_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
 def validate_model_checkpoint(checkpoint_path: str | Path) -> Dict[str, Any]:
     """
     Inspects and validates a saved PyTorch checkpoint.
+    Cached in-memory to prevent repeated multi-megabyte PyTorch unpickling.
     """
     p = Path(checkpoint_path)
     if not p.exists():
         return {"valid": False, "error": f"Checkpoint not found at: {p}"}
+
+    cache_key = f"{str(p.resolve())}_{p.stat().st_mtime}"
+    if cache_key in _CHECKPOINT_VAL_CACHE:
+        return _CHECKPOINT_VAL_CACHE[cache_key]
 
     try:
         data = torch.load(str(p), map_location="cpu", weights_only=False)
         required_keys = ["model_state_dict", "vocab_to_idx", "idx_to_vocab", "config"]
         missing_keys = [k for k in required_keys if k not in data]
         if missing_keys:
-            return {
+            res = {
                 "valid": False,
                 "error": f"Corrupted checkpoint: missing required components {missing_keys}",
             }
+            _CHECKPOINT_VAL_CACHE[cache_key] = res
+            return res
 
         cfg = data["config"]
         meta = data.get("training_meta", {})
         history = data.get("history", [])
 
-        return {
+        res = {
             "valid": True,
             "filename": p.name,
             "size_bytes": p.stat().st_size,
@@ -94,5 +112,7 @@ def validate_model_checkpoint(checkpoint_path: str | Path) -> Dict[str, Any]:
             "timestamp": meta.get("timestamp"),
             "history_length": len(history),
         }
+        _CHECKPOINT_VAL_CACHE[cache_key] = res
+        return res
     except Exception as e:
         return {"valid": False, "error": f"Failed to load checkpoint: {str(e)}"}

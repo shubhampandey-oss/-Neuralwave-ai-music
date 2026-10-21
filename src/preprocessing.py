@@ -7,22 +7,33 @@ and saves vocabulary and sequence tensors.
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 import json
+import time
 import torch
 from .midi_utils import parse_midi_file
 
+_DISCOVERY_CACHE: Dict[str, Tuple[float, List[Path]]] = {}
 
-def discover_midi_files(directory: str | Path) -> List[Path]:
-    """Recursively finds all .mid and .midi files in the directory."""
+
+def discover_midi_files(directory: str | Path, ttl: float = 3.0) -> List[Path]:
+    """Recursively finds all .mid and .midi files in the directory with TTL caching."""
     dir_path = Path(directory)
     if not dir_path.exists():
         return []
+
+    cache_key = str(dir_path.resolve())
+    now = time.time()
+    if cache_key in _DISCOVERY_CACHE:
+        cached_time, cached_files = _DISCOVERY_CACHE[cache_key]
+        if now - cached_time < ttl:
+            return cached_files
 
     midi_files: List[Path] = []
     for ext in ("*.mid", "*.midi", "*.MID", "*.MIDI"):
         midi_files.extend(dir_path.rglob(ext))
 
-    # Deduplicate and sort for deterministic behavior
-    return sorted(list(set(midi_files)))
+    result = sorted(list(set(midi_files)))
+    _DISCOVERY_CACHE[cache_key] = (now, result)
+    return result
 
 
 def preprocess_midi_dataset(
@@ -142,12 +153,20 @@ def preprocess_midi_dataset(
     return summary_meta
 
 
+_DATASET_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
 def load_preprocessed_dataset(dataset_dir: str | Path) -> Dict[str, Any]:
-    """Loads preprocessed dataset.pt from disk."""
+    """Loads preprocessed dataset.pt from disk with in-memory caching."""
     pt_path = Path(dataset_dir) / "dataset.pt"
     if not pt_path.exists():
         raise FileNotFoundError(f"Preprocessed dataset not found at: {pt_path}")
 
+    cache_key = f"{str(pt_path.resolve())}_{pt_path.stat().st_mtime}"
+    if cache_key in _DATASET_CACHE:
+        return _DATASET_CACHE[cache_key]
+
     # Load with PyTorch
     data = torch.load(str(pt_path), map_location="cpu", weights_only=False)
+    _DATASET_CACHE[cache_key] = data
     return data

@@ -46,10 +46,18 @@ def find_soundfont() -> Optional[Path]:
     return None
 
 
+_GLOBAL_RENDERER_CACHE: Optional[Dict[str, Any]] = None
+
+
 def get_audio_renderer_status(custom_soundfont: str = "", custom_fluidsynth: str = "") -> Dict[str, Any]:
     """
     Checks if FluidSynth and a compatible SoundFont are available.
+    Caches default check to avoid repeated PATH and disk scans.
     """
+    global _GLOBAL_RENDERER_CACHE
+    if not custom_soundfont and not custom_fluidsynth and _GLOBAL_RENDERER_CACHE is not None:
+        return _GLOBAL_RENDERER_CACHE
+
     fluidsynth_bin = custom_fluidsynth or shutil.which("fluidsynth")
     
     soundfont_path: Optional[Path] = None
@@ -60,7 +68,7 @@ def get_audio_renderer_status(custom_soundfont: str = "", custom_fluidsynth: str
 
     available = (fluidsynth_bin is not None) and (soundfont_path is not None)
 
-    return {
+    res = {
         "available": bool(available),
         "fluidsynth_installed": fluidsynth_bin is not None,
         "fluidsynth_path": str(fluidsynth_bin) if fluidsynth_bin else None,
@@ -75,6 +83,11 @@ def get_audio_renderer_status(custom_soundfont: str = "", custom_fluidsynth: str
             "MuseScore, GarageBand, FL Studio, VLC, or Windows Media Player."
         ),
     }
+
+    if not custom_soundfont and not custom_fluidsynth:
+        _GLOBAL_RENDERER_CACHE = res
+
+    return res
 
 
 def render_midi_to_wav(
