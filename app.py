@@ -502,9 +502,108 @@ def render_piano_roll_plot(tokens, quarter_length=0.5):
 
 
 # ---------------------------------------------------------
-# Sidebar Navigation & System Status
 # ---------------------------------------------------------
+# Sidebar & Global Navigation State
+# ---------------------------------------------------------
+PAGES = [
+    "Dashboard",
+    "Dataset Lab",
+    "Model Training",
+    "Music Generator",
+    "My Compositions",
+    "Model & Settings",
+    "About Project",
+]
+
+
+def init_navigation():
+    """Initializes page routing state and backward navigation stack."""
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "Dashboard"
+    if "page_history" not in st.session_state:
+        st.session_state["page_history"] = []
+
+
+def navigate_to(page_name: str):
+    """Pushes current page to history stack and transitions to target page."""
+    if page_name in PAGES:
+        curr = st.session_state.get("current_page", "Dashboard")
+        if curr != page_name:
+            if "page_history" not in st.session_state:
+                st.session_state["page_history"] = []
+            if not st.session_state["page_history"] or st.session_state["page_history"][-1] != curr:
+                st.session_state["page_history"].append(curr)
+            st.session_state["current_page"] = page_name
+        st.rerun()
+
+
+def navigate_back():
+    """Pops the most recent page from history and navigates backward."""
+    if "page_history" in st.session_state and st.session_state["page_history"]:
+        prev_page = st.session_state["page_history"].pop()
+        st.session_state["current_page"] = prev_page
+    else:
+        st.session_state["current_page"] = "Dashboard"
+    st.rerun()
+
+
+def render_top_navigation():
+    """
+    Renders a prominent backward navigation button and breadcrumb bar at the top of the studio.
+    """
+    init_navigation()
+    current = st.session_state.get("current_page", "Dashboard")
+    history = st.session_state.get("page_history", [])
+
+    col_back, col_trail, col_quick = st.columns([1.6, 3.2, 2.2])
+
+    with col_back:
+        has_history = len(history) > 0
+        back_target = history[-1] if has_history else ("Dashboard" if current != "Dashboard" else None)
+        if back_target:
+            if st.button(f"⬅ Back to {back_target}", key="global_top_back_btn", use_container_width=True):
+                navigate_back()
+        else:
+            st.button("⬅ Back (Root)", disabled=True, key="global_top_back_disabled", use_container_width=True)
+
+    with col_trail:
+        crumb_items = []
+        if history:
+            for h in history[-2:]:
+                crumb_items.append(f"<span style='color: #9AA6BA;'>{h}</span>")
+        crumb_items.append(f"<span style='color: #36A3FF; font-weight: 700;'>{current}</span>")
+        trail_html = " <span style='color: #263247;'>/</span> ".join(crumb_items)
+
+        st.markdown(f"""
+        <div style="background: #0D111B; border: 1px solid #263247; border-radius: 8px; padding: 7px 12px; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+            <span style="color: #FF244F; font-size: 0.85rem;">⚡</span>
+            <span style="color: #9AA6BA;">Studio</span> <span style="color: #263247;">/</span> {trail_html}
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_quick:
+        q_c1, q_c2 = st.columns(2)
+        with q_c1:
+            if current != "Dashboard":
+                if st.button("🎛 Dashboard", key="top_quick_dash", use_container_width=True):
+                    navigate_to("Dashboard")
+        with q_c2:
+            if current != "Music Generator":
+                if st.button("⚡ Generator", key="top_quick_gen", use_container_width=True):
+                    navigate_to("Music Generator")
+
+    st.markdown("<hr style='border-color: #263247; margin: 12px 0 18px 0;'>", unsafe_allow_html=True)
+
+
 def render_sidebar():
+    init_navigation()
+    current_page = st.session_state.get("current_page", "Dashboard")
+    if current_page not in PAGES:
+        current_page = "Dashboard"
+        st.session_state["current_page"] = "Dashboard"
+
+    current_idx = PAGES.index(current_page)
+
     with st.sidebar:
         st.markdown("""
         <div class="brand-header">
@@ -518,20 +617,26 @@ def render_sidebar():
         </div>
         """, unsafe_allow_html=True)
 
+        st.markdown("<div style='font-size: 0.75rem; color: #9AA6BA; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;'>Studio Navigation</div>", unsafe_allow_html=True)
+
+        # Radio button dynamically synced to current_page
         selected_page = st.radio(
             "Studio Navigation",
-            [
-                "Dashboard",
-                "Dataset Lab",
-                "Model Training",
-                "Music Generator",
-                "My Compositions",
-                "Model & Settings",
-                "About Project",
-            ],
-            index=0,
+            PAGES,
+            index=current_idx,
+            key=f"sidebar_radio_{current_page}",
             label_visibility="collapsed",
         )
+
+        if selected_page != current_page:
+            navigate_to(selected_page)
+
+        # Dedicated Sidebar Backward Action
+        history = st.session_state.get("page_history", [])
+        if history:
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            if st.button(f"⬅ Back to {history[-1]}", key="sidebar_back_action_btn", use_container_width=True):
+                navigate_back()
 
         st.markdown("<hr style='border-color: #263247; margin: 20px 0;'>", unsafe_allow_html=True)
 
@@ -557,8 +662,6 @@ def render_sidebar():
             </div>
         </div>
         """, unsafe_allow_html=True)
-
-        return selected_page
 
 
 # ---------------------------------------------------------
@@ -649,12 +752,10 @@ def page_dashboard(cfg):
     col_act1, col_act2, col_act3 = st.columns([1, 1, 2])
     with col_act1:
         if st.button("⚡ Generate New Music", use_container_width=True):
-            st.session_state["nav_page"] = "Music Generator"
-            st.rerun()
+            navigate_to("Music Generator")
     with col_act2:
         if st.button("🎛 Train Neural Model", use_container_width=True):
-            st.session_state["nav_page"] = "Model Training"
-            st.rerun()
+            navigate_to("Model Training")
     with col_act3:
         if len(midi_files) == 0:
             if st.button("✨ Load Demo Synthetic Dataset (1-Click)", use_container_width=True):
@@ -890,8 +991,7 @@ def page_model_training(cfg):
     if not (prep_dir / "dataset.pt").exists():
         st.warning("⚠️ No preprocessed dataset found. Please visit Dataset Lab first to preprocess your MIDI files.")
         if st.button("Go to Dataset Lab"):
-            st.session_state["nav_page"] = "Dataset Lab"
-            st.rerun()
+            navigate_to("Dataset Lab")
         return
 
     # Check dataset specs
@@ -1018,8 +1118,7 @@ def page_music_generator(cfg):
         </div>
         """, unsafe_allow_html=True)
         if st.button("Go to Model Training"):
-            st.session_state["nav_page"] = "Model Training"
-            st.rerun()
+            navigate_to("Model Training")
         return
 
     # Checkpoint Selection
@@ -1396,21 +1495,15 @@ def page_about():
 # ---------------------------------------------------------
 def main():
     cfg = load_config()
+    init_navigation()
 
-    # Session State for page navigation
-    if "nav_page" not in st.session_state:
-        st.session_state["nav_page"] = "Dashboard"
+    # Render sidebar with fully interactive and synchronized selection
+    render_sidebar()
 
-    selected_page = render_sidebar()
+    # Render top global navigation bar with backward button & breadcrumbs
+    render_top_navigation()
 
-    # Allow programmatic jumps
-    if st.session_state["nav_page"] != selected_page:
-        active_page = st.session_state["nav_page"]
-    else:
-        active_page = selected_page
-
-    # Update session state to match
-    st.session_state["nav_page"] = active_page
+    active_page = st.session_state.get("current_page", "Dashboard")
 
     if active_page == "Dashboard":
         page_dashboard(cfg)
