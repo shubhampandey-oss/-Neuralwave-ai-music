@@ -1,0 +1,114 @@
+{
+  "status": "completed",
+  "epochs_completed": 17,
+  "total_epochs": 17,
+  "final_loss": 1.4087,
+  "best_loss": 3.0215,
+  "training_time_seconds": 0.96,
+  "device": "cpu",
+  "checkpoint_dir": "C:\\Users\\user.LENOVO\\Downloads\\AI Music Generation\\models",
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 2.8177,
+      "val_loss": 3.0215,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 2,
+      "train_loss": 2.5581,
+      "val_loss": 3.6719,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 3,
+      "train_loss": 2.3907,
+      "val_loss": 4.4018,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 4,
+      "train_loss": 2.2862,
+      "val_loss": 4.3959,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 5,
+      "train_loss": 2.1198,
+      "val_loss": 4.6662,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 6,
+      "train_loss": 2.199,
+      "val_loss": 5.1823,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 7,
+      "train_loss": 2.0104,
+      "val_loss": 5.6234,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 8,
+      "train_loss": 1.9763,
+      "val_loss": 5.7218,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 9,
+      "train_loss": 1.9214,
+      "val_loss": 5.6696,
+      "elapsed_seconds": 0.01
+    },
+    {
+      "epoch": 10,
+      "train_loss": 1.7885,
+      "val_loss": 5.4846,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 11,
+      "train_loss": 1.563,
+      "val_loss": 5.3709,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 12,
+      "train_loss": 1.5863,
+      "val_loss": 5.2896,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 13,
+      "train_loss": 1.6802,
+      "val_loss": 5.2744,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 14,
+      "train_loss": 1.6866,
+      "val_loss": 5.3003,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 15,
+      "train_loss": 1.7178,
+      "val_loss": 5.3441,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 16,
+      "train_loss": 1.4021,
+      "val_loss": 5.3886,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "epoch": 17,
+      "train_loss": 1.4087,
+      "val_loss": 5.4144,
+      "elapsed_seconds": 0.02
+    }
+  ]
+}

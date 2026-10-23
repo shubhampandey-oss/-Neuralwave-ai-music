@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "discovered_files": 1,
+    "valid_files": 1,
+    "skipped_files": 0,
+    "total_notes_extracted": 29,
+    "vocab_size": 17,
+    "sequence_count": 1,
+    "sequence_length": 32,
+    "sample_tokens": [
+      "A4",
+      "B4",
+      "C4",
+      "C4.E4.G4",
+      "C4.E4.G4.C5",
+      "C5",
+      "D4",
+      "D4.F4.A4",
+      "D5",
+      "E4"
+    ]
+  },
+  "valid_files": [
+    {
+      "filename": "synthetic_sample.mid",
+      "token_count": 29,
+      "min_pitch": 60,
+      "max_pitch": 76,
+      "unique_tokens": 15
+    }
+  ],
+  "skipped_files": []
+}

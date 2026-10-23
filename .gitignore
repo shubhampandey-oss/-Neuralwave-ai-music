@@ -45,9 +45,14 @@ data/midi/*
 !data/midi/synthetic_sample.mid
 data/preprocessed/*
 !data/preprocessed/README.md
+!data/preprocessed/dataset.pt
+!data/preprocessed/vocab.json
+!data/preprocessed/preprocessing_meta.json
 models/*
 !models/README.md
 !models/model_config.json
+!models/best_model.pt
+!models/training_meta.json
 
 # Audio and generated compositions
 outputs/*
