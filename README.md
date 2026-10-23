@@ -237,20 +237,44 @@ To train on a diverse corpus of real-world music:
 Follow these steps to push the project to your GitHub repository:
 
 ```bash
-# 1. Initialize git (if not already initialized)
-git init
-
-# 2. Add files (respects .gitignore exclusions)
-git add .
-
-# 3. Commit
-git commit -m "feat: complete NeuralWave AI music generation studio for CodeAlpha internship"
-
-# 4. Link remote and push
+# 1. Ensure on main branch
 git branch -M main
-git remote add origin https://github.com/<your-username>/neuralwave-ai.git
+
+# 2. Add your GitHub repository as remote (replace with your repo URL)
+git remote add origin https://github.com/<your-username>/neuralwave-ai-music.git
+
+# 3. Push to GitHub
 git push -u origin main
 ```
+
+---
+
+## 🌐 Deploying to Render (Free Cloud Hosting)
+
+This repository includes a pre-configured `render.yaml` Blueprint and an optimized CPU wheel configuration in `requirements.txt`.
+
+### Option A: 1-Click Render Blueprint (Recommended)
+1. Push your repository to **GitHub**.
+2. Log in to [Render Dashboard](https://dashboard.render.com/).
+3. Click **New +** $\rightarrow$ **Blueprint**.
+4. Connect your GitHub repository. Render will automatically read [`render.yaml`](file:///c:/Users/user.LENOVO/Downloads/AI%20Music%20Generation/render.yaml) and configure the build and start settings!
+5. Click **Apply**.
+
+### Option B: Manual Web Service Setup on Render
+1. In Render Dashboard, click **New +** $\rightarrow$ **Web Service**.
+2. Connect your GitHub repository.
+3. Configure the following settings:
+   - **Name**: `neuralwave-ai-music` (or your choice)
+   - **Environment**: `Python 3`
+   - **Region**: Any (e.g., Oregon or Frankfurt)
+   - **Branch**: `main`
+   - **Build Command**: `pip install --upgrade pip && pip install -r requirements.txt`
+   - **Start Command**: `streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false`
+   - **Instance Type**: `Free`
+4. Under **Advanced** $\rightarrow$ **Add Environment Variable**:
+   - Key: `PYTHON_VERSION`
+   - Value: `3.11.9`
+5. Click **Create Web Service**. Your app will build and go live with a public `.onrender.com` URL!
 
 ---
 
